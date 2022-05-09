@@ -1,5 +1,7 @@
 # CarrotMarket
 
+> Serverless Carrot Market Clone using NextJS, Tailwind, Prisma, PlanetScale and Cloudflare.
+
 ## 세팅
 
 ```zsh
@@ -141,7 +143,7 @@ module.exports = {
 
 tailwind 3.0전까지는 실제로 엄청 큰 css파일을 가지고 있는 상태라 배포시에는 사용하는 클래스명을 제외한 나머지를 삭제하는 purging이라는 프로세스를 거쳣다.
 
-**just in Time Compiler**
+**Just In Time Compiler**
 
 클래스명을 생성하면 컴파일러가 그것을 찾아낸다음 새로 generate해준다. 그리고 제공하지 않는 수치도 JIT 컴파일러를 통해 쉽게 적용할 수 있다.
 
