@@ -2,6 +2,12 @@
 
 > Serverless Carrot Market Clone using NextJS, Tailwind, Prisma, PlanetScale and Cloudflare.
 
+```zsh
+pscale connect carrot-market // db 연결
+
+npx prisma studio // db 관리자 패널
+```
+
 ## 세팅
 
 ```zsh
