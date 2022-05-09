@@ -150,3 +150,59 @@ tailwind 3.0전까지는 실제로 엄청 큰 css파일을 가지고 있는 상�
 ```html
 <div className="bg-[#2b2b2b] bg-[url(./icon.png)]"></div>
 ```
+
+## Prisma
+
+DB ORM
+
+```zsh
+Next steps:
+1. Set the DATABASE_URL in the .env file to point to your existing database. If your database has no tables yet, read https://pris.ly/d/getting-started
+2. Set the provider of the datasource block in schema.prisma to match your database: postgresql, mysql, sqlite, sqlserver, mongodb or cockroachdb (Preview).
+3. Run prisma db pull to turn your database schema into a Prisma schema.
+4. Run prisma generate to generate the Prisma Client. You can then start querying your database.
+```
+
+## Next.js
+
+### Api Routes
+
+처음에는 next.js는 리액트의 SSR 처리를 단순화하기 위해 태어났다고 생각햇다.
+
+리액트 앱을 배포할 때 해당 도메인서버에서 npm run start를 하는 식으로 하질 않는다.
+
+해당 앱에는 당연히 개발을 위한 라이브러리들도 잔뜩 설치되어있기 때문에 실제 배포에만 쓰일 파일들로 최적화하고 압축하는 과정이 필요하다.
+
+그리고 해당 도메인에 접속하면 그 빌드된 파일을 클라이언트에게 전해줄 서버가 필요하다. 보통 express로 처리를 많이 한다.
+
+```js
+app.get("/", () => res.send(build / index.html));
+```
+
+그러나 Next.js는 프레임워크로서 이런 부분을 해결해주고 서버 개발까지 도와준다(풀스택).
+
+api routes 기능은 서버사이드 개발을 지원한다.
+
+```ts
+import { NextApiRequest, NextApiResponse } from "next";
+import client from "../../libs/client";
+
+export default async function handler(
+	req: NextApiRequest,
+	res: NextApiResponse
+) {
+	await client.user.create({
+		// 해당 코드는 DB와 연결된 prisma
+		data: {
+			email: "hi",
+			name: "hi",
+		},
+	});
+
+	res.json({
+		// express에서 보던 response
+		ok: true,
+		data: "xx",
+	});
+}
+```
