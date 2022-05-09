@@ -185,7 +185,7 @@ api routes 기능은 서버사이드 개발을 지원한다.
 
 ```ts
 import { NextApiRequest, NextApiResponse } from "next";
-import client from "../../libs/client";
+import client from "../@libs/client";
 
 export default async function handler(
 	req: NextApiRequest,
