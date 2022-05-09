@@ -206,3 +206,56 @@ export default async function handler(
 	});
 }
 ```
+
+## react-hook-forms
+
+```tsx
+import { useForm } from "react-hook-form";
+
+export default function Forms() {
+	const { register, watch, handleSubmit } = useForm();
+	// register : 인자로 받은 name통해 ref와 name props , state value, onChange 연결
+	// watch : 현재 폼 인풋 state들 객체로 리턴
+	// handleSubmit : form 이벤트 핸들링 함수, valid할때의 함수와 invalid할 때 상황의 함수 2개를 인자로 받는다.
+
+	const onValid = (data: LoginForm) => {
+		console.log(data);
+	};
+
+	const inValid = (error: FieldErrors) => {
+		console.log(error);
+	};
+
+	return (
+		<form onSubmit={handleSubmit(onValid, inValid)}>
+			<input
+				{...register("username", {
+					// (property) required?: string | ValidationRule<boolean> | undefined
+					// boolean 데이터를 받거나 에러메세지를 적을수 있고 나중에 submit 이벤트가 발생할 때 활용할 수 잇다..
+					required: "Username is required", // error 처리 또한 type별로 돌려받을 수 있다.
+					minLength: {
+						message: "The Username should be longer than 5 chars",
+						value: 5,
+					},
+				})}
+				type='text'
+				placeholder='Username'
+			/>
+			<input
+				{...register("email", {
+					required: "email is required",
+					validate: {
+						notGmail: (value) =>
+							!value.includes("@gmail.com") || "gmail is not allowed",
+						// api 요청을 하거나 이렇게 커스텀한 validation도 적용할 수 있다.
+					},
+				})}
+				type='email'
+				placeholder='email'
+			/>
+			<input {...register("password")} type='password' placeholder='password' />
+			<input type='submit' value='create Account' />
+		</form>
+	);
+}
+```
