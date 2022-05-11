@@ -242,6 +242,25 @@ export default function useUser() {
 
 	return data;
 }
+
+/// mutate
+// swr에서는 기존 캐싱하고 있는 데이터를 변형도 가능하다.
+// url이 다른 요청의 캐싱데이터 또한 useSWRConfig를 통해 조작할 수 있다.
+// mutate에서는 콜백으로 기존 데이터를 인자로 지원한다.(useState와 똑같다)
+const ItemDetail: NextPage = () => {
+	const user = useUser(); // 훅스에 swr로 캐싱된 다른 url의 데이터가 있다.
+	const { mutate } = useSWRConfig();
+	const { data, mutate: boundMutate } = useSWR(`/api/products/`)
+	const [toggleFav] = useMutation(`/api/products/${router.query.id}/fav`);
+	const onFavClick = () => {
+		// 현재요청중인 products의 캐싱데이터
+		boundMutate((prev) => prev && { ...prev, isLiked: !prev.isLiked }, false);
+		// useUser에서 사용중인 users의 캐싱데이터
+	 	mutate("/api/users/me", (prev:any) => ({...prev, ok: !prev.ok }), false)
+		mutate("/api/users/me") // 아예 새로 요청하게 됨
+	};
+	...
+}
 ```
 
 ## react-hook-forms
