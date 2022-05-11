@@ -18,6 +18,9 @@ npx create-next-app@latest --typescript
 yarn add -D tailwindcss postcss autoprefixer
 
 npx tailwindcss init -p
+
+// prisma complie error 시
+npx prisma format
 ```
 
 tailwind.config.js
