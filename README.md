@@ -213,6 +213,10 @@ export default async function handler(
 }
 ```
 
+### NextAuth
+
+유저가 로그인돼잇는지 아닌지 알려주는 훅과 function 제공
+
 ## react-hook-forms
 
 ```tsx
