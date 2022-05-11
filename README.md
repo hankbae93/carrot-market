@@ -217,6 +217,30 @@ export default async function handler(
 
 유저가 로그인돼잇는지 아닌지 알려주는 훅과 function 제공
 
+### Api Caching
+
+기존 react 프로젝트에서는 redux 등 전역 상태로 저장햇지만
+
+next.js는 페이지 별로 독립적이기에 auth api같은 경우는 인증을 했음에도 매번 불필요하게 요청해야된다.
+
+그래서 react-query, swr 같은 api 캐싱 라이브러리들을 사용한다.
+
+## SWR
+
+```ts
+import useSWR from "swr";
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+export default function useUser() {
+	const { data, error } = useSWR("/api/users/me", fetcher);
+	// url을 Key로 캐싱해주고 새로고침이나 다른페이지를 다녀와도 캐싱된 데이터를 가져옴
+	// 혹시 서버의 데이터가 변경되면 맞춰서 업데이트해준다
+
+	return data;
+}
+```
+
 ## react-hook-forms
 
 ```tsx
