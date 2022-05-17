@@ -8,48 +8,33 @@ async function handler(
   res: NextApiResponse<ResponseType>
 ) {
   const {
-    query: { id },
     session: { user },
   } = req;
-  const alreadyExists = await client.wondering.findFirst({
+  const purchases = await client.purchase.findMany({
     where: {
       userId: user?.id,
-      postId: +id.toString(),
     },
-    select: {
-      id: true,
+    include: {
+      product: {
+        include: {
+          _count: {
+            select: {
+              favs: true,
+            },
+          },
+        },
+      },
     },
   });
-  if (alreadyExists) {
-    await client.wondering.delete({
-      where: {
-        id: alreadyExists.id,
-      },
-    });
-  } else {
-    await client.wondering.create({
-      data: {
-        user: {
-          connect: {
-            id: user?.id,
-          },
-        },
-        post: {
-          connect: {
-            id: +id.toString(),
-          },
-        },
-      },
-    });
-  }
   res.json({
     ok: true,
+    purchases,
   });
 }
 
 export default withApiSession(
   withHandler({
-    methods: ["POST"],
+    methods: ["GET"],
     handler,
   })
 );

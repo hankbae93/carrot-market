@@ -10,40 +10,28 @@ async function handler(
   const {
     query: { id },
     session: { user },
+    body: { answer },
   } = req;
-  const alreadyExists = await client.wondering.findFirst({
-    where: {
-      userId: user?.id,
-      postId: +id.toString(),
-    },
-    select: {
-      id: true,
+
+  const newAnswer = await client.answer.create({
+    data: {
+      user: {
+        connect: {
+          id: user?.id,
+        },
+      },
+      post: {
+        connect: {
+          id: +id.toString(),
+        },
+      },
+      answer,
     },
   });
-  if (alreadyExists) {
-    await client.wondering.delete({
-      where: {
-        id: alreadyExists.id,
-      },
-    });
-  } else {
-    await client.wondering.create({
-      data: {
-        user: {
-          connect: {
-            id: user?.id,
-          },
-        },
-        post: {
-          connect: {
-            id: +id.toString(),
-          },
-        },
-      },
-    });
-  }
+  console.log(newAnswer);
   res.json({
     ok: true,
+    answer: newAnswer,
   });
 }
 
