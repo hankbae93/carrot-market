@@ -228,6 +228,29 @@ next.js는 페이지 별로 독립적이기에 auth api같은 경우는 인증�
 
 그래서 react-query, swr 같은 api 캐싱 라이브러리들을 사용한다.
 
+### Next Image
+
+Next.js의 이미지 컴포넌트는 여러가지 기능을 지원한다.
+
+1. lazy-loading
+   스크롤을 내리기 전까지 이미지를 로드하지 않고 블러 형태로 대기하는 것을 지원해준다.
+
+2. 이미지 최적화
+
+local Image : 가지고 있는 이미지
+
+```tsx
+// 로드되기전 블러처리
+// 품질도 조절할 수 있다.
+<Image src={TestImg} placeholder='blur' quality={10} />
+```
+
+remote Image: 외부의 이미지.
+
+### \_middlewares
+
+넥스트 서버에서 리소스를 제공하기전에 미들웨어로 함수들을 실행할 수 있다.
+
 ## SWR
 
 ```ts
