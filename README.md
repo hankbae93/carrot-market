@@ -338,3 +338,30 @@ export default function Forms() {
 	);
 }
 ```
+
+## CloudFlare DCU
+
+만약 클라이언트에서 이미지를 업로드할 때 서버를 거쳐 CloudFlare에 전송한다면
+
+두번의 전송비를 내야된다.
+
+클라우드플레어는 그러지 않기 위해 클라이언트가 서버에게 이미지를 업로드한다고 요청하면
+
+백엔드 서버는 클라우드플레어에게 클라우드플레어에게 빈 URL만 받아온다. (그리고 이과정은 우리의 API key 노출도 방지한다.)
+
+그리고 그 URL을 받은 클라이언트는 직접 거기에 업로드하고 링크만 우리 DB에 저장하면 된다.
+
+```ts
+const { uploadURL } = await(await fetch(`/api/files`)).json();
+const form = new FormData();
+form.append("file", avatar[0], user?.id + "");
+const {
+	result: { id },
+} = await(
+	await fetch(uploadURL, {
+		// 받은 CF URL로 직접 업로드한다.
+		method: "POST",
+		body: form,
+	})
+).json();
+```
