@@ -232,6 +232,27 @@ next.js는 페이지 별로 독립적이기에 auth api같은 경우는 인증�
 
 넥스트 서버에서 리소스를 제공하기전에 미들웨어로 함수들을 실행할 수 있다.
 
+사용법은 해당 url의 폴더에 \_middleware.ts를 생성해서 작성하면 된다.
+
+`NextRequest`는 사용자가 페이지를 요청을 할때 담기는 모든 정보를 가지고 있다.
+
+`NextResponse`를 통해 페이지를 보호하거나 redirect하거나 액션을 취할 수 있다.
+
+```ts
+import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
+
+export function middleware(req: NextRequest, ev: NextFetchEvent) {
+	if (req.ua?.isBot) {
+		return new Response("Don't be a bot");
+	}
+	if (!req.url.includes("/api")) {
+		if (!req.url.includes("/enter") && !req.cookies.carrotsession) {
+			return NextResponse.redirect("/enter");
+		}
+	}
+}
+```
+
 ## SWR
 
 ```ts
@@ -372,6 +393,8 @@ remote Image: 외부의 이미지.
 	height={48}
 	src={getImgURLResized(data?.product?.user?.avatar)}
 	className='w-12 h-12 rounded-full bg-slate-300'
+	placeholder='blur' // 로컬용
+	blurDataUrl='만들어논이미지' // https에서는 blur처리를 할수 없어 만들어논 이미지를 넣어놓기도한다.
 	alt=''
 />
 ```
@@ -387,3 +410,176 @@ webp 형식 등으로 변환되서 가져온다.
 3. 크기 조절
 
 보통 height는 정하지 않고 패딩 탑을 이용한다.
+
+# `Dynamic Import`
+
+```tsx
+import type { NextPage } from "next";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import Button from "@components/button";
+import Input from "@components/input";
+import useMutation from "@libs/client/useMutation";
+import { cls } from "@libs/client/utils";
+import { useRouter } from "next/router";
+```
+
+컴포넌트를 임포트하는 순간 이미 해당 파일을 번들링할때 해당 js code가 포함된다
+
+예를 들어 Button을 클릭하면 Input이 보이는 구조라고 할 때
+
+Input이 보이지 않아도
+
+미리 최종 번들에 포함되어있고 사용자는 그걸 다운받게 된다.(그만큼 로드속도가 느려진다)
+
+```tsx
+// 옵션을 사용
+const Input = dynamic(() => import("@components/input"), {
+	ssr: false, // 서버단에서는 로딩하지 않도록
+	loading: () => <span>Loading a big component</span>,
+	// 용량이 크다면 loading동안 다른 컴포넌트를 보여줄 수 있다.
+});
+
+//suspense 활용
+const Input = dynamic(() => import("@components/input"), {
+	suspense: true,
+})
+
+...
+
+return (
+	<Suspense fallback={<span>LOADING COMPONENT</span>}>
+		<Input />
+	</Suspense>
+);
+```
+
+Next.js의 `dynamic`은 컴포넌트를 lazy-loading할수 있게 도와준다.
+
+해당 컴포넌트가 렌더되는 순간 import하는 것을 볼 수 있다.
+
+만약 dynamic 컴포넌트가 용량이 크다면? `Preload`를 하는 방식도 좋다.
+
+# `_Document.tsx`
+
+```tsx
+import Document, { Html, Head, Main, NextScript } from "next/document";
+
+class CustomDocument extends Document {
+	render(): JSX.Element {
+		return (
+			<Html lang='ko'>
+				<Head></Head>
+				<body>
+					<Main />
+					// AppComponent는 Main에서 렌더된다.
+					<NextScript />
+				</body>
+			</Html>
+		);
+	}
+}
+
+export default CustomDocument;
+```
+
+Next.js의 html 뼈대를 잡는 역할이다.
+
+\_app.tsx와 다르게 서버에서 한번만 실행된다.
+
+## Font 최적화
+
+```tsx
+// _document.tsx
+<Head>
+	<link
+		href='https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap'
+		rel='stylesheet'
+	/>
+</Head>
+```
+
+구글 폰트를 사용하면 처음에 해당 폰트들의 리소스 위치URL이 적혀있는
+
+CSS 파일을 먼저 받아야한다.
+
+그 후 또 사용자가 폰트를 받아오는 과정이 필요하다.
+
+Next.js는 이런 과정을 미리 작업해둬서 (빌드 시 적용됨)
+
+클라이언트는 바로 폰트를 사용할 수 있다.
+
+## Script 최적화
+
+라이브러리나 SDK를 불러올 때도 Next.js가 최적화를 도와준다.
+
+스크립트마다 바로 불러와야 되거나 늦게 불러와야 되는 스크립트들이 있을 것이다.
+
+```tsx
+import Script from "next/script";
+<Script
+	src='https://developers.kakao.com/sdk/js/kakao.js'
+	strategy='beforeInteractive' // 페이지를 불러오기 전 스크립트를 불러온다.
+	strategy='afterInteractive' // default, 페이지를 불러온 다음 스크립트를 불러온다.
+	strategy='lazyOnload' // 다른 모든 소스를 불러온 뒤 스크립트를 부른다
+/>;
+```
+
+# `getServerSideProps`
+
+서버사이드에서만 호출되는 함수
+
+```tsx
+export async function getServerSideProps() {
+	const products = await client.product.findMany({});
+
+	return {
+		props: {
+			products: JSON.parse(JSON.stringify(products)),
+		},
+	};
+}
+```
+
+## 사용자가 해당 페이지를 접속할 때 로딩상태를 기다리기 원치 않을 때 사용
+
+데이터를 다 불러오고 한번에 페이지를 전달해주는 식으로 진행된다.
+
+단점
+
+- 캐싱을 할수없어 매번 요청을 한다.(react-query를 활용해서 해결하기도 한다.)
+- 서버사이드에서 에러가 났을 시 사용자가 아무 화면도 받을수가 없다.
+
+<br/ >
+
+# `getStaticProps`
+
+    해당 페이지에 갔을 때 데이터가 거기에 존재하면 static.
+
+`getServerSideProps`의 경우에는 유저의 요청마다 호출되지만
+
+페이지가 빌드되고 Next.js가 html을 export할때 한번 getStaticProps가 호출됩니다.
+
+html을 생성할 때 어떤 리소스든 활용할 수 있습니다.
+
+```tsx
+// 해당 코드는 가지고 있는 markdown폴더에서 가져와 html을 생성하는 코드입니다.
+export async function getStaticProps() {
+	const blogPosts = readdirSync("./posts").map((file) => {
+		const content = readFileSync(`./posts/${file}`, "utf-8");
+
+		return matter(content).data;
+	});
+
+	return {
+		props: {
+			posts: blogPosts,
+		},
+	};
+}
+```
+
+```zsh
+● /blog                                  1.58 kB        83.2 kB
+●  (SSG)         automatically generated as static HTML + JSON (uses getStaticProps)
+```

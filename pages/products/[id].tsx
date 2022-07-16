@@ -36,7 +36,7 @@ const ItemDetail: NextPage = () => {
 		toggleFav({});
 	};
 	return (
-		<Layout canGoBack>
+		<Layout canGoBack title='Product'>
 			<div className='px-4  py-4'>
 				<div className='mb-8'>
 					<div className='relative pb-80'>
