@@ -550,7 +550,7 @@ export async function getServerSideProps() {
 - 캐싱을 할수없어 매번 요청을 한다.(react-query를 활용해서 해결하기도 한다.)
 - 서버사이드에서 에러가 났을 시 사용자가 아무 화면도 받을수가 없다.
 
-<br/ >
+<br />
 
 # `getStaticProps`
 
@@ -558,7 +558,7 @@ export async function getServerSideProps() {
 
 `getServerSideProps`의 경우에는 유저의 요청마다 호출되지만
 
-페이지가 빌드되고 Next.js가 html을 export할때 한번 getStaticProps가 호출됩니다.
+`getStaticProps`는 페이지가 빌드되고 Next.js가 html을 export할때 한번 호출됩니다.
 
 html을 생성할 때 어떤 리소스든 활용할 수 있습니다.
 
@@ -583,3 +583,50 @@ export async function getStaticProps() {
 ● /blog                                  1.58 kB        83.2 kB
 ●  (SSG)         automatically generated as static HTML + JSON (uses getStaticProps)
 ```
+
+## `Error: getStaticPaths is required for dynamic SSG pages`
+
+HTML을 미리 생성하려면 (pre-generate) Next.js는 우선 개수를 먼저 알아야한다.
+
+[id].tsx의 경우에 url안에 변수가 포함되어있기 때문에 무제한이 될수가 있다.
+
+이런 동적인 페이지에서 getStaticProps를 사용하려면 `getStaticPaths`도 활용해줘야한다.
+
+```tsx
+export function getStaticPaths() {
+	const file = readdirSync("./posts").map((file) => {
+		const [name, extension] = file.split(".");
+		return {
+			params: {
+				slug: name, // 동적인 변수에 맞춰 이름을 넣어준다
+			},
+		};
+	});
+
+	return {
+		paths: file, // path에서는 생성할 파일이름 배열을 전달한다
+		fallback: false,
+	};
+}
+
+export async function getStaticProps() {
+	return {
+		props: {},
+	};
+}
+```
+
+```zsh
+// 빌드후 생성된 파일
+ ● /blog/[slug]                           289 B          79.4 kB
+├   ├ /blog/01-first-post
+├   └ /blog/02-my-trip
+```
+
+### recap
+
+Next.js는 페이지를 가져가서 일반 html로 만든다.
+
+html로 export하는 동안 해당 페이지에 데이터를 넣고 싶을 수 있다.
+
+`getStaticProps`를 사용할 땐 페이지가 빌드되기 전에 데이터를 추가해 html을 생성한다.
