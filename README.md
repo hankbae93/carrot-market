@@ -630,3 +630,105 @@ Next.js는 페이지를 가져가서 일반 html로 만든다.
 html로 export하는 동안 해당 페이지에 데이터를 넣고 싶을 수 있다.
 
 `getStaticProps`를 사용할 땐 페이지가 빌드되기 전에 데이터를 추가해 html을 생성한다.
+
+<br/>
+
+# `Incremental Static Regeneration`
+
+```tsx
+export async function getStaticProps() {
+	const posts = await client.post.findMany({ include: { user: true } });
+	return {
+		props: {
+			posts: JSON.parse(JSON.stringify(posts)),
+		},
+	};
+}
+```
+
+기존 `getStaticProps`는 서버에서 한번 실행되기 때문에 그후로 업데이트되는 데이터의 HTML은
+
+생성되지 않는다. `ISR`은 이런 문제를 해결하기 위해 일정한 주기별로 백그라운드에서
+
+`getStaticProps`을 실행해 새로 HTML을 생성한다.
+
+```tsx
+export async function getStaticProps() {
+	const posts = await client.post.findMany({ include: { user: true } });
+	return {
+		props: {
+			posts: JSON.parse(JSON.stringify(posts)),
+		},
+		revalidate: 20, // 주기를 정해주면 백그라운드에서 재실행한다.
+	};
+}
+```
+
+## `On-demand Revalidation`
+
+`getStaticProps`을 주기별이 아닌 원하는 타이밍에 동작시킬 수 있다면?
+
+아래 API가 호출되면 갱신하는 메소드도 실행할 것이다.
+
+```tsx
+async function handler(
+	req: NextApiRequest,
+	res: NextApiResponse<ResponseType>
+) {
+	if (req.method === "POST") {
+		const {
+			body: { question, latitude, longitude },
+			session: { user },
+		} = req;
+
+		const post = await client.post.create({
+			data: {
+				question,
+				latitude,
+				longitude,
+				user: {
+					connect: {
+						id: user?.id,
+					},
+				},
+			},
+		});
+
+		await res.revalidate("/community"); // 해당 getStaticProps 갱신
+
+		res.json({
+			ok: true,
+			post,
+		});
+	}
+}
+```
+
+`약간의 함정카드가 있는데 Next.js는 생성된 html을 먼저 주고 그 후 react-app을 주는 식으로 전개된다.`
+
+이때문에 실제로는 갱신으로 새로운 html이 생성되었지만 리액트 앱 위에서만 페이지 이동을 하게 될 경우
+
+사용자가 아예 새로고침을 하지 않는 한(서버에게 html을 달라고 요청) 갱신이 되지 않는 것처럼 느껴질 수 있다.
+
+## `Blocking SSG`
+
+```tsx
+export const getStaticPaths: GetStaticPaths = () => {
+	return {
+		paths: [],
+		fallback: "blocking", // html을 생성하는 동안은 사용자와 차단된다
+		fallback: false,
+		// 빌드타임때 생성하는 path배열의 html을 제외한 주소의 html을 요청하면 404 응답을 보낸다.
+		fallback: true,
+		// blocking과 반대로 사용자가 요청하면 html을 생성하는 와중에 최초 html을 미리 보내줄 수 있다.
+	};
+};
+```
+
+데이터의 개수가 적으면 pre-generate할 수도 있지만 만약 쇼핑몰의 상품 상세페이지처럼
+
+수백개에서 수만개까지 있을 수 있는 html을 다 생성해놔야 될까?
+
+`getStaticPaths`에서는 사용자가 요청했을 때 generate 후 html을 제공할 수 있는 `fallback`옵션이 존재한다.
+
+이제는 수만개를 미리 생성하지 않고 사용자가 접속한 페이지들만 생성해 용량을 아낄 수 있다.
